@@ -271,7 +271,7 @@ button { font-family: var(--font); cursor: pointer; border: none; }
   font-weight: 700; font-size: 0.85rem; color: white;
   flex-shrink: 0;
 }
-.nav-username { font-size: 0.85rem; color: var(--text-2); truncate: ellipsis; overflow: hidden; white-space: nowrap; }
+.nav-username { font-size: 0.85rem; color: var(--text-2); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
 
 .nav-logout {
   background: rgba(239,68,68,0.1);
@@ -1739,4 +1739,281 @@ textarea::placeholder { color: var(--text-3); }
   .exercise-stats { grid-template-columns: 1fr; }
   .exercise-item { flex-direction: column; align-items: flex-start; gap: 12px; }
   .exercise-item-right { width: 100%; justify-content: space-between; }
+}
+
+/* ═══════════════════════════════════════════════
+   REFINED INTERFACE PASS
+═══════════════════════════════════════════════ */
+:root {
+  --surface: #11172a;
+  --surface-strong: #151d33;
+}
+
+html, body, #root {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(99,102,241,0.10), transparent 28rem),
+    radial-gradient(circle at 12% 92%, rgba(139,92,246,0.07), transparent 24rem),
+    var(--bg);
+}
+
+.app-layout {
+  background: linear-gradient(145deg, rgba(255,255,255,0.012), transparent 42%);
+}
+
+.navbar {
+  background: rgba(13,17,32,0.92);
+  border-right-color: rgba(148,163,184,0.10);
+  box-shadow: 12px 0 40px rgba(0,0,0,0.10);
+}
+
+.navbar-brand {
+  margin: 0 4px 10px;
+  padding: 10px 12px 18px;
+}
+
+.nav-link {
+  min-height: 44px;
+  margin: 2px 0;
+}
+
+.nav-link.active {
+  background: linear-gradient(90deg, rgba(99,102,241,0.20), rgba(99,102,241,0.08));
+  box-shadow: inset 3px 0 0 var(--primary), 0 8px 24px rgba(99,102,241,0.08);
+}
+
+.main-content {
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  gap: 20px;
+  padding: 28px clamp(20px, 3vw, 42px);
+}
+
+.page-header {
+  min-height: 58px;
+}
+
+.page-title {
+  letter-spacing: -0.035em;
+  font-size: clamp(1.65rem, 2.4vw, 2.1rem);
+}
+
+.page-subtitle {
+  color: #aab5c7;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  min-height: 104px;
+  background: linear-gradient(145deg, rgba(23,31,53,0.86), rgba(13,18,34,0.86));
+  box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+}
+
+.stat-card.primary {
+  background: linear-gradient(145deg, rgba(99,102,241,0.19), rgba(31,38,68,0.88));
+}
+
+.stat-icon {
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.logger-card, .log-card, .chart-card, .data-table-card,
+.progress-card, .exercise-logger, .exercise-log, .report-stat {
+  background: linear-gradient(145deg, rgba(20,27,48,0.94), rgba(12,17,31,0.94));
+  box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+  backdrop-filter: blur(14px);
+  border-radius: 18px;
+}
+
+.logger-input, .input-icon-wrap input, .exercise-search-input,
+.duration-input, .goal-input {
+  background: rgba(7,10,20,0.36);
+  border-color: rgba(148,163,184,0.12);
+}
+
+.logger-input:focus, .exercise-search-input:focus, .duration-input:focus,
+.input-icon-wrap input:focus {
+  background: rgba(7,10,20,0.50);
+}
+
+.logger-btn, .auth-btn, .nav-btn.next, .nav-btn.finish {
+  border-radius: 12px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 24px rgba(99,102,241,0.20);
+}
+
+.food-item, .exercise-item {
+  background: rgba(7,10,20,0.22);
+  border-radius: 12px;
+}
+
+.auth-card {
+  background: linear-gradient(145deg, rgba(23,31,53,0.96), rgba(13,18,34,0.96));
+  border-color: rgba(148,163,184,0.14);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.38);
+}
+
+.auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 32% auto;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--primary-h), transparent);
+}
+
+.onboarding-card {
+  background: linear-gradient(145deg, rgba(23,31,53,0.96), rgba(13,18,34,0.96));
+  border-color: rgba(148,163,184,0.14);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.38);
+}
+
+.chat-header {
+  background: linear-gradient(180deg, rgba(13,18,34,0.94), rgba(13,18,34,0.74));
+  backdrop-filter: blur(18px);
+}
+
+.message.bot {
+  background: linear-gradient(145deg, rgba(26,36,61,0.96), rgba(17,24,43,0.96));
+  border-radius: 18px 18px 18px 5px;
+}
+
+.message.user {
+  border-radius: 18px 18px 5px 18px;
+  background: linear-gradient(135deg, #777cf5, #5458df);
+}
+
+.input-container {
+  background: rgba(16,23,41,0.92);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.14);
+}
+
+@media (max-width: 900px) {
+  .main-content { max-width: none; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  html, body, #root { overflow: hidden; }
+
+  .app-layout {
+    display: block;
+  }
+
+  .navbar {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: auto;
+    min-width: 0;
+    height: 64px;
+    border: 1px solid rgba(148,163,184,0.14);
+    border-radius: 18px;
+    padding: 7px;
+    flex-direction: row;
+    align-items: center;
+    box-shadow: 0 16px 44px rgba(0,0,0,0.48);
+  }
+
+  .navbar-brand, .navbar-footer { display: none; }
+
+  .navbar-links {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .nav-link {
+    width: 22%;
+    min-height: 48px;
+    margin: 0;
+  }
+
+  .nav-link.active {
+    box-shadow: inset 0 -3px 0 var(--primary);
+  }
+
+  .main-content {
+    height: 100dvh;
+    padding: 18px 14px 92px;
+  }
+
+  .chat-layout {
+    height: 100dvh;
+    padding: 0 !important;
+  }
+
+  .chat-page-container {
+    height: 100dvh;
+  }
+
+  .chat-header {
+    padding: 14px 16px;
+  }
+
+  .chat-messages {
+    padding: 18px 14px;
+  }
+
+  .message {
+    max-width: 82%;
+  }
+
+  .input-area {
+    padding: 10px 12px 78px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat-card {
+    min-height: 92px;
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .stat-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .stat-value {
+    font-size: 1.32rem;
+  }
+
+  .macros-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .macro-card {
+    padding: 12px 6px;
+  }
+
+  .logger-card, .log-card, .progress-card {
+    border-radius: 16px;
+  }
+
+  .auth-page {
+    padding: 16px;
+  }
+
+  .auth-card {
+    max-width: 100%;
+    padding: 28px 22px;
+  }
+
+  .onboarding-card {
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+  }
 }

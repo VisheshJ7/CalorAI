@@ -147,6 +147,8 @@ export default function Dashboard() {
     const percentage = Math.min((netCalories / dailyGoal) * 100, 100);
     const remaining = Math.max(dailyGoal - netCalories, 0);
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
     const progressColor = percentage > 90 ? '#ef4444' : percentage > 70 ? '#f59e0b' : '#6366f1';
 
@@ -156,7 +158,7 @@ export default function Dashboard() {
             <main className="main-content">
                 <div className="page-header">
                     <div>
-                        <h1 className="page-title">Dashboard</h1>
+                        <h1 className="page-title">{greeting}, {user?.username || 'there'}</h1>
                         <p className="page-subtitle">{today}</p>
                     </div>
                     <button className="icon-btn" onClick={fetchToday} title="Refresh">
