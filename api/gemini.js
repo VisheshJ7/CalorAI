@@ -1,13 +1,39 @@
 /* global process */
+import fs from 'node:fs'
+import path from 'node:path'
+
+function loadLocalGeminiKey() {
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY
+
+  const envFiles = ['.env.local', '.env']
+  for (const fileName of envFiles) {
+    const filePath = path.resolve(process.cwd(), fileName)
+    if (!fs.existsSync(filePath)) continue
+
+    const content = fs.readFileSync(filePath, 'utf8')
+    for (const rawLine of content.split(/\r?\n/)) {
+      const line = rawLine.trim()
+      if (!line || line.startsWith('#')) continue
+      const separator = line.indexOf('=')
+      if (separator < 0) continue
+      const name = line.slice(0, separator).trim()
+      if (name !== 'GEMINI_API_KEY') continue
+      const value = line.slice(separator + 1).trim().replace(/^['"]|['"]$/g, '')
+      if (value) return value
+    }
+  }
+
+  return ''
+}
 
 export const GEMINI_MODELS = [
   'gemini-3.8-flash',
-  'gemini-3.7-flash',
-  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-2.5-flash',
 ];
 
 export async function generateGeminiContent(prompt, systemInstruction) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = loadLocalGeminiKey();
   if (!apiKey) {
     throw new Error('Gemini API key is not configured');
   }
@@ -15,23 +41,37 @@ export async function generateGeminiContent(prompt, systemInstruction) {
   let lastError = null;
 
   for (const model of GEMINI_MODELS) {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: systemInstruction
-            ? { parts: [{ text: systemInstruction }] }
-            : undefined,
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'text/plain',
-          },
-        }),
-      }
-    );
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            systemInstruction: systemInstruction
+              ? { parts: [{ text: systemInstruction }] }
+              : undefined,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: 'text/plain',
+            },
+          }),
+        }
+      );
+    } catch (error) {
+      lastError = error.name === 'AbortError'
+        ? new Error(`Gemini timed out while contacting ${model}`)
+        : error;
+      clearTimeout(timeout);
+      continue;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (response.ok) {
       const data = await response.json();
