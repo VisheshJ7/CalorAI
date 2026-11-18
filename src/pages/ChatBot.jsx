@@ -10,7 +10,7 @@ estimates and nutritional info. Format responses clearly using bold text for key
 export default function ChatBot() {
     const [messages, setMessages] = useState([{
         role: 'bot',
-        content: "Hello! I'm **CalorAI**, your nutrition assistant 🥗\n\nI can help you with:\n- **Calorie counts** for any food\n- **Meal planning** and nutrition advice\n- **Macronutrient** breakdowns\n- **Healthy eating** tips\n\nWhat food would you like to know about?",
+        content: "Hello! I'm **CalorAI**, your nutrition assistant.\n\nI can help you with:\n- **Calorie counts** for any food\n- **Meal planning** and nutrition advice\n- **Macronutrient** breakdowns\n- **Healthy eating** tips\n\nWhat food would you like to know about?",
         timestamp: new Date().toISOString(),
     }]);
     const [input, setInput] = useState('');
@@ -65,7 +65,7 @@ export default function ChatBot() {
         } catch (error) {
             setMessages((prev) => [...prev, {
                 role: 'bot',
-                content: `⚠️ ${error.message || 'Error communicating with AI. Please check your connection.'}`,
+                content: `Sorry — ${error.message || 'I could not communicate with AI. Please check your connection.'}`,
                 timestamp: new Date().toISOString(),
             }]);
         } finally {

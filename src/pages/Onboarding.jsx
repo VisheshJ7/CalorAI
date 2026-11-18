@@ -12,9 +12,9 @@ const ACTIVITY_LEVELS = [
 ];
 
 const GOALS = [
-    { value: 'lose', label: 'Lose Weight', desc: 'Create a calorie deficit to lose fat', icon: '📉' },
-    { value: 'maintain', label: 'Maintain Weight', desc: 'Keep your current weight stable', icon: '⚖️' },
-    { value: 'gain', label: 'Gain Weight', desc: 'Build muscle with a calorie surplus', icon: '📈' },
+    { value: 'lose', label: 'Lose Weight', desc: 'Create a calorie deficit to lose fat', icon: TrendingDown },
+    { value: 'maintain', label: 'Maintain Weight', desc: 'Keep your current weight stable', icon: Scale },
+    { value: 'gain', label: 'Gain Weight', desc: 'Build muscle with a calorie surplus', icon: TrendingUp },
 ];
 
 const WEIGHT_CHANGE_OPTIONS = [
@@ -237,20 +237,23 @@ export default function Onboarding() {
                         <p className="step-desc">We'll adjust your calorie target accordingly</p>
 
                         <div className="goal-options">
-                            {GOALS.map((g) => (
-                                <button
-                                    key={g.value}
-                                    type="button"
-                                    className={`goal-option ${form.goal === g.value ? 'active' : ''}`}
-                                    onClick={() => setForm({ ...form, goal: g.value })}
-                                >
-                                    <span className="goal-icon">{g.icon}</span>
-                                    <div className="goal-text">
-                                        <span className="goal-label">{g.label}</span>
-                                        <span className="goal-desc">{g.desc}</span>
-                                    </div>
-                                </button>
-                            ))}
+                            {GOALS.map((g) => {
+                                const GoalIcon = g.icon;
+                                return (
+                                    <button
+                                        key={g.value}
+                                        type="button"
+                                        className={`goal-option ${form.goal === g.value ? 'active' : ''}`}
+                                        onClick={() => setForm({ ...form, goal: g.value })}
+                                    >
+                                        <span className="goal-icon"><GoalIcon size={22} /></span>
+                                        <div className="goal-text">
+                                            <span className="goal-label">{g.label}</span>
+                                            <span className="goal-desc">{g.desc}</span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -290,7 +293,7 @@ export default function Onboarding() {
                 {/* Step: Result */}
                 {currentStepName === 'result' && result && (
                     <div className="onboarding-step result-step">
-                        <div className="result-icon">🎯</div>
+                        <div className="result-icon"><Target size={30} /></div>
                         <h2 className="step-title">Your personalized plan is ready!</h2>
                         
                         <div className="result-cards">
@@ -309,7 +312,7 @@ export default function Onboarding() {
                         {result.weekly_change > 0 && (
                             <div className="result-weekly-change">
                                 <span className="weekly-change-label">
-                                    {form.goal === 'lose' ? '📉 Weekly target loss:' : '📈 Weekly target gain:'}
+                                    {form.goal === 'lose' ? 'Weekly target loss:' : 'Weekly target gain:'}
                                 </span>
                                 <span className="weekly-change-value">{result.weekly_change} kg/week</span>
                             </div>

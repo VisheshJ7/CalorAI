@@ -1,21 +1,13 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, BarChart3, MessageSquare, LogOut, Flame, Dumbbell } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, BarChart3, MessageSquare, Flame, Dumbbell, UserRound } from 'lucide-react';
 
 export default function Navbar() {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
     const navItems = [
         { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
         { to: '/exercise', icon: <Dumbbell size={20} />, label: 'Exercise' },
         { to: '/reports', icon: <BarChart3 size={20} />, label: 'Reports' },
         { to: '/chat', icon: <MessageSquare size={20} />, label: 'AI Chat' },
+        { to: '/profile', icon: <UserRound size={20} />, label: 'Profile' },
     ];
 
     return (
@@ -39,15 +31,6 @@ export default function Navbar() {
                 ))}
             </div>
 
-            <div className="navbar-footer">
-                <div className="nav-user">
-                    <div className="nav-avatar">{user?.username?.[0]?.toUpperCase()}</div>
-                    <span className="nav-username">{user?.username}</span>
-                </div>
-                <button className="nav-logout" onClick={handleLogout} title="Log out" aria-label="Log out">
-                    <LogOut size={18} />
-                </button>
-            </div>
         </nav>
     );
 }

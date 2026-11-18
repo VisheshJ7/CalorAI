@@ -28,6 +28,13 @@ export function AuthProvider({ children }) {
             username: profile?.username || authUser.email?.split('@')[0] || 'User',
             calorieGoal: profile?.calorie_goal || 2000,
             onboardingCompleted: Boolean(profile?.onboarding_completed),
+            gender: profile?.gender || 'male',
+            age: profile?.age || '',
+            height: profile?.height || '',
+            weight: profile?.weight || '',
+            activityLevel: profile?.activity_level || 'moderate',
+            goal: profile?.goal || authUser.user_metadata?.goal || 'maintain',
+            weightChangePerWeek: profile?.weight_change_per_week || authUser.user_metadata?.weight_change_per_week || 0.5,
         });
     }, []);
 
@@ -55,6 +62,7 @@ export function AuthProvider({ children }) {
             options: { data: { username: username.trim() } },
         });
         if (error) throw error;
+
         if (!data.session) {
             return {
                 verificationRequired: true,
@@ -109,10 +117,25 @@ export function AuthProvider({ children }) {
             .eq('id', user.id);
         if (error) throw error;
 
+        const { error: metadataError } = await supabase.auth.updateUser({
+            data: {
+                goal: onboardingData.goal,
+                weight_change_per_week: onboardingData.goal === 'maintain' ? 0 : weeklyChange,
+            },
+        });
+        if (metadataError) throw metadataError;
+
         setUser((current) => ({
             ...current,
             calorieGoal: recommendedGoal,
             onboardingCompleted: true,
+            gender,
+            age: onboardingData.age,
+            height: onboardingData.height,
+            weight: onboardingData.weight,
+            activityLevel: onboardingData.activity_level,
+            goal: onboardingData.goal,
+            weightChangePerWeek: onboardingData.goal === 'maintain' ? 0 : weeklyChange,
         }));
 
         return {

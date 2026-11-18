@@ -1,49 +1,71 @@
 {
   "schemaVersion": "uizze.visual-evidence.v1",
-  "scope": "CalorAI responsive UI polish",
+  "scope": "CalorAI iPhone app redesign and logged-in mobile pass",
   "platform": "web",
   "sources": [
-    { "path": "..\\src\\index.css", "sha256": "b347121a77d5c71eab3c1f2aeef3bf26e1e090509759ef173e416cb309229429" },
-    { "path": "..\\src\\components\\navbar.jsx", "sha256": "a5a55283d78fd2e3ef0673f52749dfecd959f11e65af54274a97e80412343fc9" },
-    { "path": "..\\src\\pages\\login.jsx", "sha256": "dddacbeb858c949f4c02a625279c7b9db31d05987b7cb6a0b0115f400bd65fae" },
-    { "path": "..\\src\\pages\\register.jsx", "sha256": "e825b9385e3dfc77500cae7d56a29514cbdc0915c7f54b1d2418a681083cf0de" },
-    { "path": "..\\src\\pages\\chatbot.jsx", "sha256": "05aecfb9a77c1c8b6aa90c79961667b70fb6de63d3f6fc1fe21f6b194580fc68" }
+    { "path": "..\\src\\index.css", "sha256": "10c6597f5e499270cc045d7727d3c976026162166015e2b5e0aa56acdd548826" },
+    { "path": "..\\src\\pages\\Dashboard.jsx", "sha256": "1b99435cd22e1f3dd3f5def50ee3ed3f9afdaf333e9f612bd9a9e6b4719fc300" },
+    { "path": "..\\src\\pages\\Reports.jsx", "sha256": "c8fee926cf660e7831d6d5e30d229950d5d7425c3c4b4304b1892645b14290e5" },
+    { "path": "..\\src\\pages\\ChatBot.jsx", "sha256": "3e2c9f12ad1fab92c14a9c57a88c34264ffba8411d42d5e133901d9fb7448797" },
+    { "path": "..\\src\\pages\\Onboarding.jsx", "sha256": "72d08769a337bd5dd50b906ffde41039bbbf1c0ec48fb5695171b0a5874e6130" }
   ],
   "comparison": "existing-system",
   "requiredChecks": [
-    { "id": "desktop-login", "kind": "visual" },
-    { "id": "mobile-login", "kind": "interaction" }
+    { "id": "logged-in-dashboard", "kind": "visual" },
+    { "id": "logged-in-exercise", "kind": "visual" },
+    { "id": "logged-in-reports", "kind": "visual" },
+    { "id": "logged-in-chat", "kind": "interaction" }
   ],
   "checks": [
     {
-      "id": "desktop-login",
+      "id": "logged-in-dashboard",
       "status": "pass",
-      "state": "login form at rest",
-      "environment": { "kind": "browser", "name": "chromium", "width": 1440, "height": 900 },
-      "observed": "form remains centered with clear hierarchy and no clipping.",
+      "state": "Dashboard with real logged-in data",
+      "environment": { "kind": "browser", "name": "Chromium", "width": 393, "height": 852 },
+      "observed": "The light dashboard is readable, the greeting no longer wraps badly, and the bottom tab bar remains visible.",
       "artifacts": [
-        { "path": "login-desktop.png", "kind": "image", "sha256": "9740fbf51081c7abcfa5a4cfca5f1bbde0454c4e32b7d1497ccdbd2d955d6c02" }
+        { "path": "light-dashboard-mobile-fixed.png", "kind": "image", "sha256": "a02285a773f38998a074de5eeb7441cb194b108d8b99234b75576365a6337184" }
       ]
     },
     {
-      "id": "mobile-login",
+      "id": "logged-in-exercise",
       "status": "pass",
-      "state": "login form at rest",
-      "environment": { "kind": "browser", "name": "chromium", "width": 390, "height": 844 },
-      "observed": "inputs use 16px text to avoid ios zoom; primary action is 45px tall; card fits without overlap.",
+      "state": "Exercise screen with real logged-in shell",
+      "environment": { "kind": "browser", "name": "Chromium", "width": 393, "height": 852 },
+      "observed": "Exercise cards and primary logger remain readable at mobile width.",
+      "artifacts": [
+        { "path": "light-exercise-mobile.png", "kind": "image", "sha256": "235899556d1415529661f65a0e8ef7ec827cddaa779ba475827b2849c845a9f1" }
+      ]
+    },
+    {
+      "id": "logged-in-reports",
+      "status": "pass",
+      "state": "Reports overview",
+      "environment": { "kind": "browser", "name": "Chromium", "width": 393, "height": 852 },
+      "observed": "Report summary cards reflow without horizontal overflow.",
+      "artifacts": [
+        { "path": "light-reports-mobile.png", "kind": "image", "sha256": "afd3aaf08bfa86cceb4b5979f8074c5f284c2a31393fd85a5556727e7839a6e7" }
+      ]
+    },
+    {
+      "id": "logged-in-chat",
+      "status": "pass",
+      "state": "Chat screen with real logged-in shell",
+      "environment": { "kind": "browser", "name": "Chromium", "width": 393, "height": 852 },
+      "observed": "Chat messages and composer remain visible above the iOS-style bottom navigation.",
       "steps": [
-        "set viewport to 390x844",
-        "reload /login",
-        "inspect form bounds and computed input font size"
+        "Navigate to /chat",
+        "Set the viewport to 393x852",
+        "Inspect the message, composer, and bottom navigation"
       ],
       "artifacts": [
-        { "path": "login-mobile.png", "kind": "image", "sha256": "4a43d7dab17f6ed212b8af0ead0f667c48070291f01b9bdd3fada773f17e7ce3" }
+        { "path": "light-chat-mobile.png", "kind": "image", "sha256": "1be152809aabec9c5e8fdabeecfff1e260ab37278ed3defaa970e3c0a2845262" }
       ]
     }
   ],
   "limitations": [
-    "native ios simulator/device verification was not available; safe-area css was validated in chromium only.",
-    "authenticated dashboard, exercise, reports, onboarding, and chat data states were not visually rendered because no test account/session was available."
+    "Browser verification is not a native iOS Safari or iPhone 17 hardware check.",
+    "The reports chart loading state and exercise dropdown were not submitted with test mutations."
   ],
   "unresolved": []
 }

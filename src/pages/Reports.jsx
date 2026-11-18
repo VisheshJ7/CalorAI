@@ -184,15 +184,15 @@ export default function Reports() {
                                 <AreaChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="calGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#2f7d5b" stopOpacity={0.28} />
+                                            <stop offset="95%" stopColor="#2f7d5b" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                                     <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                                     <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                                     <Tooltip content={<CustomTooltip />} />
-                                    <Area type="monotone" dataKey="calories" stroke="#6366f1" strokeWidth={2} fill="url(#calGrad)" dot={{ fill: '#6366f1', r: 4 }} />
+                                    <Area type="monotone" dataKey="calories" stroke="#2f7d5b" strokeWidth={2} fill="url(#calGrad)" dot={{ fill: '#2f7d5b', r: 4 }} />
                                 </AreaChart>
                             ) : (
                                 <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -204,7 +204,7 @@ export default function Reports() {
                                         {data.map((entry, index) => (
                                             <Cell
                                                 key={index}
-                                                fill={entry.calories > dailyGoal ? '#ef4444' : entry.calories > dailyGoal * 0.8 ? '#f59e0b' : '#6366f1'}
+                                                fill={entry.calories > dailyGoal ? '#ef4444' : entry.calories > dailyGoal * 0.8 ? '#f59e0b' : '#2f7d5b'}
                                             />
                                         ))}
                                     </Bar>
@@ -216,7 +216,7 @@ export default function Reports() {
                     {!loading && (
                         <div className="chart-legend">
                             <span className="legend-item">
-                                <span className="legend-dot" style={{ background: '#6366f1' }} /> Under goal
+                                <span className="legend-dot" style={{ background: '#2f7d5b' }} /> Under goal
                             </span>
                             <span className="legend-item">
                                 <span className="legend-dot" style={{ background: '#f59e0b' }} /> 80–100% of goal

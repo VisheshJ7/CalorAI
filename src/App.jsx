@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
 import ChatBot from './pages/ChatBot';
 import Exercise from './pages/Exercise';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/exercise" element={<ProtectedRoute requireOnboarding><Exercise /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute requireOnboarding><Reports /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute requireOnboarding><ChatBot /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute requireOnboarding><Profile /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

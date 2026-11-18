@@ -151,7 +151,7 @@ export default function Dashboard() {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-    const progressColor = percentage > 90 ? '#ef4444' : percentage > 70 ? '#f59e0b' : '#6366f1';
+    const progressColor = percentage > 90 ? '#ef4444' : percentage > 70 ? '#f59e0b' : '#2f7d5b';
 
     return (
         <div className="app-layout">
@@ -162,7 +162,7 @@ export default function Dashboard() {
                         <h1 className="page-title">{greeting}, {user?.username || 'there'}</h1>
                         <p className="page-subtitle">{today}</p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="page-header-actions">
                         <input
                             type="date"
                             value={selectedDate}
@@ -283,7 +283,7 @@ export default function Dashboard() {
 
                     {lastAdded && (
                         <div className="last-added-banner">
-                            ✅ <strong>{lastAdded.food_item}</strong> — {lastAdded.calories.toFixed(0)} kcal
+                            <strong>{lastAdded.food_item}</strong> — {lastAdded.calories.toFixed(0)} kcal
                             <span className="banner-detail"> ({lastAdded.serving_size})</span>
                         </div>
                     )}
