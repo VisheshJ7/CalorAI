@@ -58,6 +58,7 @@ export default function Login() {
                                 value={form.email}
                                 onChange={handleChange}
                                 required
+                                autoComplete="email"
                                 id="login-username"
                             />
                         </div>
@@ -74,12 +75,14 @@ export default function Login() {
                                 value={form.password}
                                 onChange={handleChange}
                                 required
+                                autoComplete="current-password"
                                 id="login-password"
                             />
                             <button
                                 type="button"
                                 className="password-toggle"
                                 onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
                             >
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>

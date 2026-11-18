@@ -64,6 +64,7 @@ export default function Register() {
                                 onChange={handleChange}
                                 required
                                 minLength={3}
+                                autoComplete="username"
                                 id="reg-username"
                             />
                         </div>
@@ -80,6 +81,7 @@ export default function Register() {
                                 value={form.email}
                                 onChange={handleChange}
                                 required
+                                autoComplete="email"
                                 id="reg-email"
                             />
                         </div>
@@ -97,6 +99,7 @@ export default function Register() {
                                 onChange={handleChange}
                                 required
                                 minLength={6}
+                                autoComplete="new-password"
                                 id="reg-password"
                             />
                             <button
@@ -120,6 +123,7 @@ export default function Register() {
                                 value={form.confirm}
                                 onChange={handleChange}
                                 required
+                                autoComplete="new-password"
                                 id="reg-confirm"
                             />
                         </div>

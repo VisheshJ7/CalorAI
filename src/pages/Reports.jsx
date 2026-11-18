@@ -51,7 +51,11 @@ export default function Reports() {
                         date.setDate(today.getDate() - i);
                         const start = new Date(date); start.setHours(0, 0, 0, 0);
                         const end = new Date(start); end.setDate(start.getDate() + 1);
-                        buckets.push({ label: start.toLocaleDateString('en-US', { weekday: 'short' }), start, end });
+                        buckets.push({
+                            label: start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                            start,
+                            end,
+                        });
                     }
                 } else if (period === 'monthly') {
                     for (let i = 3; i >= 0; i -= 1) {
@@ -59,7 +63,11 @@ export default function Reports() {
                         end.setDate(today.getDate() - i * 7);
                         end.setHours(23, 59, 59, 999);
                         const start = new Date(end); start.setDate(end.getDate() - 6); start.setHours(0, 0, 0, 0);
-                        buckets.push({ label: `Week ${4 - i}`, start, end });
+                        buckets.push({
+                            label: `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+                            start,
+                            end,
+                        });
                     }
                 } else {
                     for (let i = 11; i >= 0; i -= 1) {

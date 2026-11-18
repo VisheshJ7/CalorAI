@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "uizze.visual-evidence.v1",
+  "scope": "CalorAI responsive UI polish",
+  "platform": "web",
+  "sources": [
+    { "path": "..\\src\\index.css", "sha256": "b347121a77d5c71eab3c1f2aeef3bf26e1e090509759ef173e416cb309229429" },
+    { "path": "..\\src\\components\\navbar.jsx", "sha256": "a5a55283d78fd2e3ef0673f52749dfecd959f11e65af54274a97e80412343fc9" },
+    { "path": "..\\src\\pages\\login.jsx", "sha256": "dddacbeb858c949f4c02a625279c7b9db31d05987b7cb6a0b0115f400bd65fae" },
+    { "path": "..\\src\\pages\\register.jsx", "sha256": "e825b9385e3dfc77500cae7d56a29514cbdc0915c7f54b1d2418a681083cf0de" },
+    { "path": "..\\src\\pages\\chatbot.jsx", "sha256": "05aecfb9a77c1c8b6aa90c79961667b70fb6de63d3f6fc1fe21f6b194580fc68" }
+  ],
+  "comparison": "existing-system",
+  "requiredChecks": [
+    { "id": "desktop-login", "kind": "visual" },
+    { "id": "mobile-login", "kind": "interaction" }
+  ],
+  "checks": [
+    {
+      "id": "desktop-login",
+      "status": "pass",
+      "state": "login form at rest",
+      "environment": { "kind": "browser", "name": "chromium", "width": 1440, "height": 900 },
+      "observed": "form remains centered with clear hierarchy and no clipping.",
+      "artifacts": [
+        { "path": "login-desktop.png", "kind": "image", "sha256": "9740fbf51081c7abcfa5a4cfca5f1bbde0454c4e32b7d1497ccdbd2d955d6c02" }
+      ]
+    },
+    {
+      "id": "mobile-login",
+      "status": "pass",
+      "state": "login form at rest",
+      "environment": { "kind": "browser", "name": "chromium", "width": 390, "height": 844 },
+      "observed": "inputs use 16px text to avoid ios zoom; primary action is 45px tall; card fits without overlap.",
+      "steps": [
+        "set viewport to 390x844",
+        "reload /login",
+        "inspect form bounds and computed input font size"
+      ],
+      "artifacts": [
+        { "path": "login-mobile.png", "kind": "image", "sha256": "4a43d7dab17f6ed212b8af0ead0f667c48070291f01b9bdd3fada773f17e7ce3" }
+      ]
+    }
+  ],
+  "limitations": [
+    "native ios simulator/device verification was not available; safe-area css was validated in chromium only.",
+    "authenticated dashboard, exercise, reports, onboarding, and chat data states were not visually rendered because no test account/session was available."
+  ],
+  "unresolved": []
+}

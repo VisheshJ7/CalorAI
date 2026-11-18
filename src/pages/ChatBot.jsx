@@ -11,6 +11,7 @@ export default function ChatBot() {
     const [messages, setMessages] = useState([{
         role: 'bot',
         content: "Hello! I'm **CalorAI**, your nutrition assistant 🥗\n\nI can help you with:\n- **Calorie counts** for any food\n- **Meal planning** and nutrition advice\n- **Macronutrient** breakdowns\n- **Healthy eating** tips\n\nWhat food would you like to know about?",
+        timestamp: new Date().toISOString(),
     }]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +41,7 @@ export default function ChatBot() {
         const userMessage = input.trim();
         setInput('');
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
-        setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+        setMessages((prev) => [...prev, { role: 'user', content: userMessage, timestamp: new Date().toISOString() }]);
         setIsLoading(true);
         try {
             const response = await fetch('/api/chat', {
@@ -60,11 +61,12 @@ export default function ChatBot() {
                 throw new Error('Run the app with "npm run dev:vercel" for local AI API routes');
             }
             const data = await response.json();
-            setMessages((prev) => [...prev, { role: 'bot', content: data.message }]);
+            setMessages((prev) => [...prev, { role: 'bot', content: data.message, timestamp: new Date().toISOString() }]);
         } catch (error) {
             setMessages((prev) => [...prev, {
                 role: 'bot',
                 content: `⚠️ ${error.message || 'Error communicating with AI. Please check your connection.'}`,
+                timestamp: new Date().toISOString(),
             }]);
         } finally {
             setIsLoading(false);
@@ -122,6 +124,16 @@ export default function ChatBot() {
                                     </div>
                                     <div className={`message ${msg.role}`}>
                                         <div className="message-markdown" dangerouslySetInnerHTML={formatMessage(msg.content)} />
+                                        {msg.timestamp && (
+                                            <div className="message-time">
+                                                {new Date(msg.timestamp).toLocaleString([], {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -148,9 +160,10 @@ export default function ChatBot() {
                                 onKeyDown={handleKeyDown}
                                 placeholder="Ask about any food's calories..."
                                 rows={1}
+                                aria-label="Message CalorAI"
                                 id="chat-input"
                             />
-                            <button className="send-button" onClick={handleSend} disabled={!input.trim() || isLoading} id="chat-send">
+                            <button className="send-button" onClick={handleSend} disabled={!input.trim() || isLoading} aria-label="Send message" id="chat-send">
                                 <Send size={18} />
                             </button>
                         </div>

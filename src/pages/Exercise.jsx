@@ -3,6 +3,7 @@ import { Flame, Search, Clock, Trash2, Dumbbell, TrendingUp, Activity, Zap, Plus
 import Navbar from '../components/Navbar';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getLocalDayRange, loggedAtForDate, toLocalDateKey } from '../utils/date';
 
 export default function Exercise() {
     const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function Exercise() {
     const [showDropdown, setShowDropdown] = useState(false);
     const [error, setError] = useState('');
     const dropdownRef = useRef(null);
+    const [selectedDate, setSelectedDate] = useState(toLocalDateKey());
 
     // Fetch exercises on search
     useEffect(() => {
@@ -41,14 +43,13 @@ export default function Exercise() {
     const fetchTodayLogs = useCallback(async () => {
         setLoading(true);
         try {
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+            const { start, end } = getLocalDayRange(selectedDate);
             const { data, error } = await supabase
                 .from('exercise_logs')
                 .select('*')
                 .eq('user_id', user.id)
-                .gte('logged_at', today.toISOString())
-                .lt('logged_at', tomorrow.toISOString())
+                .gte('logged_at', start.toISOString())
+                .lt('logged_at', end.toISOString())
                 .order('logged_at', { ascending: false });
             if (error) throw error;
             setTodayLogs(data || []);
@@ -58,7 +59,7 @@ export default function Exercise() {
         } finally {
             setLoading(false);
         }
-    }, [user?.id]);
+    }, [user?.id, selectedDate]);
 
     useEffect(() => {
         fetchTodayLogs();
@@ -107,6 +108,7 @@ export default function Exercise() {
                     exercise_name: selectedExercise.name,
                     duration_minutes: parseFloat(duration),
                     calories_burnt: Math.round(caloriesBurnt * 10) / 10,
+                    logged_at: loggedAtForDate(selectedDate).toISOString(),
                 });
             if (error) throw error;
             // Reset form
@@ -157,7 +159,18 @@ export default function Exercise() {
                             <Dumbbell size={28} className="header-icon" />
                             <h1>Exercise Tracker</h1>
                         </div>
-                        <p className="header-subtitle">Log your workouts and track calories burnt</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <p className="header-subtitle">Log your workouts and track calories burnt</p>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                max={toLocalDateKey()}
+                                onChange={(event) => setSelectedDate(event.target.value)}
+                                aria-label="Exercise tracking date"
+                                className="date-picker"
+                                id="exercise-tracking-date"
+                            />
+                        </div>
                     </header>
 
             {/* Stats Cards */}

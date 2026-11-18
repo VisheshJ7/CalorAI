@@ -8,6 +8,7 @@
     "dev:vercel": "vercel dev --listen 3000",
     "build": "vite build",
     "lint": "eslint .",
+    "test:diagnostics": "node scripts/gemini-regression.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
+import { getLocalDayRange, loggedAtForDate, toLocalDateKey } from '../utils/date';
 import {
     Flame, Plus, Trash2, Apple, RefreshCw, Target, TrendingUp, Utensils, Settings, X, Dumbbell, Minus
 } from 'lucide-react';
@@ -20,22 +21,20 @@ export default function Dashboard() {
     const [showGoalModal, setShowGoalModal] = useState(false);
     const [newGoal, setNewGoal] = useState(user?.calorieGoal || 2000);
     const [savingGoal, setSavingGoal] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(toLocalDateKey());
 
     const dailyGoal = user?.calorieGoal || 2000;
 
     const fetchToday = useCallback(async () => {
         try {
             setFetching(true);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+            const { start, end } = getLocalDayRange(selectedDate);
             const [foodRes, exerciseRes] = await Promise.all([
                 supabase.from('calorie_logs').select('*').eq('user_id', user.id)
-                    .gte('logged_at', today.toISOString()).lt('logged_at', tomorrow.toISOString())
+                    .gte('logged_at', start.toISOString()).lt('logged_at', end.toISOString())
                     .order('logged_at', { ascending: false }),
                 supabase.from('exercise_logs').select('*').eq('user_id', user.id)
-                    .gte('logged_at', today.toISOString()).lt('logged_at', tomorrow.toISOString()),
+                    .gte('logged_at', start.toISOString()).lt('logged_at', end.toISOString()),
             ]);
             if (foodRes.error) throw foodRes.error;
             if (exerciseRes.error) throw exerciseRes.error;
@@ -54,7 +53,7 @@ export default function Dashboard() {
         } finally {
             setFetching(false);
         }
-    }, [user?.id]);
+    }, [user?.id, selectedDate]);
 
     useEffect(() => { fetchToday(); }, [fetchToday]);
 
@@ -102,6 +101,7 @@ export default function Dashboard() {
                     fats: nutrition.fats,
                     serving_size: nutrition.serving_size,
                     notes: nutrition.notes,
+                    logged_at: loggedAtForDate(selectedDate).toISOString(),
                 })
                 .select('*')
                 .single();
@@ -146,7 +146,8 @@ export default function Dashboard() {
     const netCalories = totalCalories - caloriesBurnt;
     const percentage = Math.min((netCalories / dailyGoal) * 100, 100);
     const remaining = Math.max(dailyGoal - netCalories, 0);
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const selectedDateObject = new Date(`${selectedDate}T12:00:00`);
+    const today = selectedDateObject.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -161,9 +162,20 @@ export default function Dashboard() {
                         <h1 className="page-title">{greeting}, {user?.username || 'there'}</h1>
                         <p className="page-subtitle">{today}</p>
                     </div>
-                    <button className="icon-btn" onClick={fetchToday} title="Refresh">
-                        <RefreshCw size={18} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            max={toLocalDateKey()}
+                            onChange={(event) => setSelectedDate(event.target.value)}
+                            aria-label="Tracking date"
+                            className="date-picker"
+                            id="tracking-date"
+                        />
+                        <button className="icon-btn" onClick={fetchToday} title="Refresh">
+                            <RefreshCw size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats Cards */}

@@ -317,6 +317,17 @@ button { font-family: var(--font); cursor: pointer; border: none; }
 }
 .icon-btn:hover { color: var(--text); border-color: var(--border-2); }
 
+.date-picker {
+  height: 38px;
+  min-width: 145px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--glass);
+  color: var(--text);
+  color-scheme: dark;
+}
+
 /* ═══════════════════════════════════════════════
    STAT CARDS
 ═══════════════════════════════════════════════ */
@@ -643,6 +654,14 @@ button { font-family: var(--font); cursor: pointer; border: none; }
   color: var(--text);
   border-bottom-left-radius: 4px;
   border: 1px solid var(--border);
+}
+
+.message-time {
+  margin-top: 7px;
+  text-align: right;
+  color: var(--text-3);
+  font-size: 0.68rem;
+  opacity: 0.85;
 }
 
 .message-markdown pre {
@@ -2015,5 +2034,137 @@ html, body, #root {
   .onboarding-card {
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   ACCESSIBLE TOUCH / SAFE-AREA PASS
+═══════════════════════════════════════════════ */
+:where(button, a, input, textarea):focus-visible {
+  outline: 3px solid rgba(129, 140, 248, 0.8);
+  outline-offset: 3px;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+input, textarea, select {
+  color-scheme: dark;
+}
+
+@media (max-width: 600px) {
+  .auth-page {
+    min-height: 100dvh;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .auth-card {
+    border-radius: 20px;
+    padding: 26px 20px;
+  }
+
+  .form-group {
+    gap: 8px;
+  }
+
+  .input-icon-wrap input,
+  .logger-input,
+  .exercise-search-input,
+  .duration-input,
+  .goal-input,
+  textarea {
+    font-size: 16px;
+  }
+
+  .auth-btn,
+  .logger-btn,
+  .log-exercise-btn,
+  .nav-btn,
+  .btn-primary,
+  .btn-secondary,
+  .gender-btn,
+  .period-tab {
+    min-height: 44px;
+  }
+
+  .navbar {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    padding: 6px 5px;
+  }
+
+  .nav-link {
+    min-height: 48px;
+    border-radius: 14px;
+  }
+
+  .main-content {
+    padding-top: max(18px, env(safe-area-inset-top));
+  }
+
+  .page-header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-title {
+    font-size: 1.55rem;
+  }
+
+  .page-subtitle {
+    line-height: 1.45;
+  }
+
+  .logger-input-wrap {
+    gap: 10px;
+  }
+
+  .logger-btn {
+    width: 100%;
+  }
+
+  .food-item,
+  .exercise-item {
+    padding: 14px;
+  }
+
+  .food-item-right {
+    gap: 8px;
+  }
+
+  .delete-btn,
+  .nav-logout,
+  .modal-close,
+  .icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-header {
+    padding-top: max(14px, env(safe-area-inset-top));
+  }
+
+  .input-area {
+    padding-bottom: max(78px, calc(68px + env(safe-area-inset-bottom)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

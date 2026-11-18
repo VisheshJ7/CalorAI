@@ -19,7 +19,7 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className="navbar">
+        <nav className="navbar" aria-label="Primary navigation">
             <div className="navbar-brand">
                 <Flame size={24} className="navbar-logo-icon" />
                 <span className="navbar-logo-text">CalorAI</span>
@@ -44,7 +44,7 @@ export default function Navbar() {
                     <div className="nav-avatar">{user?.username?.[0]?.toUpperCase()}</div>
                     <span className="nav-username">{user?.username}</span>
                 </div>
-                <button className="nav-logout" onClick={handleLogout} title="Logout">
+                <button className="nav-logout" onClick={handleLogout} title="Log out" aria-label="Log out">
                     <LogOut size={18} />
                 </button>
             </div>

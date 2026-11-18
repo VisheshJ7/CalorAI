@@ -27,8 +27,8 @@ function loadLocalGeminiKey() {
 }
 
 export const GEMINI_MODELS = [
-  'gemini-3.8-flash',
   'gemini-3.5-flash-lite',
+  'gemini-3.8-flash',
   'gemini-2.5-flash',
 ];
 
@@ -42,7 +42,7 @@ export async function generateGeminiContent(prompt, systemInstruction) {
 
   for (const model of GEMINI_MODELS) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 8000);
     let response;
     try {
       response = await fetch(
