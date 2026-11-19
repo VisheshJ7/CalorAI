@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "test:diagnostics": "node scripts/gemini-regression.mjs",
     "test:exercise": "node scripts/exercise-inference.mjs",
+    "test:tracker": "node scripts/tracker-metrics.mjs",
+    "test:food": "node scripts/food-estimate.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

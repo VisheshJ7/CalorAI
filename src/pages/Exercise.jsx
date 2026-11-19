@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Flame, Clock, Trash2, Dumbbell, TrendingUp, Activity, Zap, Plus } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../supabase';
@@ -16,9 +16,11 @@ export default function Exercise() {
     const [logging, setLogging] = useState(false);
     const [error, setError] = useState('');
     const [selectedDate, setSelectedDate] = useState(toLocalDateKey());
+    const fetchRequestRef = useRef(0);
 
     // Fetch today's exercise logs
     const fetchTodayLogs = useCallback(async () => {
+        const requestId = ++fetchRequestRef.current;
         setLoading(true);
         try {
             const { start, end } = getLocalDayRange(selectedDate);
@@ -30,6 +32,7 @@ export default function Exercise() {
                 .lt('logged_at', end.toISOString())
                 .order('logged_at', { ascending: false });
             if (error) throw error;
+            if (requestId !== fetchRequestRef.current) return;
             setTodayLogs(data || []);
             setTotalBurnt((data || []).reduce((sum, log) => sum + log.calories_burnt, 0));
         } catch (err) {
@@ -88,18 +91,30 @@ export default function Exercise() {
                 );
             }
             setInferredExercise(inference);
+            setExerciseDescription('');
+        } catch (err) {
+            setError(err.message || 'Failed to log exercise');
+        } finally {
+            setLogging(false);
+        }
+    };
 
+    const handleConfirmExercise = async () => {
+        if (!inferredExercise) return;
+        setLogging(true);
+        setError('');
+        try {
             const { error } = await supabase
                 .from('exercise_logs')
                 .insert({
                     user_id: user.id,
-                    exercise_name: inference.exerciseName,
-                    duration_minutes: inference.durationMinutes,
-                    calories_burnt: inference.caloriesBurnt,
+                    exercise_name: inferredExercise.exerciseName,
+                    duration_minutes: inferredExercise.durationMinutes,
+                    calories_burnt: inferredExercise.caloriesBurnt,
                     logged_at: loggedAtForDate(selectedDate).toISOString(),
                 });
             if (error) throw error;
-            setExerciseDescription('');
+            setInferredExercise(null);
             await fetchTodayLogs();
         } catch (err) {
             setError(err.message || 'Failed to log exercise');
@@ -231,8 +246,33 @@ export default function Exercise() {
 
                 {inferredExercise && (
                     <div className="calorie-preview">
-                        <TrendingUp size={16} />
-                        <span>{inferredExercise.exerciseName}: <strong>{inferredExercise.durationMinutes} min • {inferredExercise.caloriesBurnt} kcal</strong></span>
+                        <div className="exercise-preview-copy">
+                            <TrendingUp size={16} />
+                            <strong>{inferredExercise.exerciseName}</strong>
+                        </div>
+                        <div className="exercise-preview-fields">
+                            <label>
+                                <span>Duration</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={inferredExercise.durationMinutes}
+                                    onChange={(event) => setInferredExercise((current) => ({ ...current, durationMinutes: Number(event.target.value) || 0 }))}
+                                />
+                            </label>
+                            <label>
+                                <span>Calories</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={inferredExercise.caloriesBurnt}
+                                    onChange={(event) => setInferredExercise((current) => ({ ...current, caloriesBurnt: Number(event.target.value) || 0 }))}
+                                />
+                            </label>
+                        </div>
+                        <button type="button" className="log-exercise-btn exercise-confirm" onClick={handleConfirmExercise} disabled={logging || inferredExercise.durationMinutes <= 0 || inferredExercise.caloriesBurnt <= 0}>
+                            {logging ? <span className="btn-spinner" /> : <>Add to today</>}
+                        </button>
                     </div>
                 )}
             </div>
@@ -240,7 +280,7 @@ export default function Exercise() {
             {/* Today's Exercise Log */}
             <div className="exercise-log card">
                 <h2 className="card-title">
-                    <Activity size={20} /> Today's Workouts
+                <Activity size={20} /> {selectedDate === toLocalDateKey() ? "Today's" : 'Selected'} Workouts
                 </h2>
 
                 {loading ? (

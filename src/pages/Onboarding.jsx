@@ -57,7 +57,13 @@ export default function Onboarding() {
 
     const canProceed = () => {
         if (currentStepName === 'profile') {
-            return form.gender && form.age && form.height && form.weight;
+            const age = Number(form.age);
+            const height = Number(form.height);
+            const weight = Number(form.weight);
+            return form.gender
+                && Number.isInteger(age) && age >= 10 && age <= 120
+                && Number.isFinite(height) && height >= 100 && height <= 250
+                && Number.isFinite(weight) && weight >= 30 && weight <= 300;
         }
         if (currentStepName === 'activity') return form.activity_level;
         if (currentStepName === 'goal') return form.goal;

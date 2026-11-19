@@ -100,7 +100,7 @@ export function AuthProvider({ children }) {
         if (onboardingData.goal === 'lose') {
             recommendedGoal = Math.max(1200, Math.round(maintenance - (weeklyChange * 7700) / 7));
         } else if (onboardingData.goal === 'gain') {
-            recommendedGoal = Math.round(maintenance + Math.min((weeklyChange * 7700) / 7, 1000));
+            recommendedGoal = Math.round(maintenance + (weeklyChange * 7700) / 7);
         }
 
         const { error } = await supabase

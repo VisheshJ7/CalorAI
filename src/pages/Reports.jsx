@@ -18,6 +18,9 @@ const CustomTooltip = ({ active, payload, label }) => {
             <div className="chart-tooltip">
                 <p className="tt-label">{label}</p>
                 <p className="tt-value">{payload[0].value.toFixed(0)} <span>kcal</span></p>
+                {Number.isFinite(entry.exercise) && (
+                    <p className="tt-macros">Exercise: {entry.exercise.toFixed(0)} kcal</p>
+                )}
                 {entry.macros && (
                     <div className="tt-macros">
                         <span>P: {entry.macros.protein.toFixed(0)}g</span>
@@ -58,13 +61,14 @@ export default function Reports() {
                         });
                     }
                 } else if (period === 'monthly') {
-                    for (let i = 3; i >= 0; i -= 1) {
-                        const end = new Date(today);
-                        end.setDate(today.getDate() - i * 7);
-                        end.setHours(23, 59, 59, 999);
-                        const start = new Date(end); start.setDate(end.getDate() - 6); start.setHours(0, 0, 0, 0);
+                    for (let i = 29; i >= 0; i -= 1) {
+                        const start = new Date(today);
+                        start.setDate(today.getDate() - i);
+                        start.setHours(0, 0, 0, 0);
+                        const end = new Date(start);
+                        end.setDate(start.getDate() + 1);
                         buckets.push({
-                            label: `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+                            label: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                             start,
                             end,
                         });
@@ -78,33 +82,83 @@ export default function Reports() {
                 }
 
                 const entries = [];
-                for (const bucket of buckets) {
-                    const { data, error } = await supabase
+                if (period === 'monthly') {
+                    const rangeStart = buckets[0].start;
+                    const rangeEnd = buckets[buckets.length - 1].end;
+                    const [foodResult, exerciseResult] = await Promise.all([
+                        supabase
                         .from('calorie_logs')
                         .select('calories, protein, carbs, fats')
                         .eq('user_id', user.id)
-                        .gte('logged_at', bucket.start.toISOString())
-                        .lt('logged_at', bucket.end.toISOString());
+                        .gte('logged_at', rangeStart.toISOString())
+                        .lt('logged_at', rangeEnd.toISOString()),
+                        supabase
+                        .from('exercise_logs')
+                        .select('calories_burnt')
+                        .eq('user_id', user.id)
+                        .gte('logged_at', rangeStart.toISOString())
+                        .lt('logged_at', rangeEnd.toISOString()),
+                    ]);
+                    const error = foodResult.error || exerciseResult.error;
                     if (error) throw error;
-                    entries.push({
-                        label: bucket.label,
-                        calories: (data || []).reduce((sum, row) => sum + row.calories, 0),
-                        macros: {
-                            protein: (data || []).reduce((sum, row) => sum + (row.protein || 0), 0),
-                            carbs: (data || []).reduce((sum, row) => sum + (row.carbs || 0), 0),
-                            fats: (data || []).reduce((sum, row) => sum + (row.fats || 0), 0),
-                        },
-                    });
+                    for (const bucket of buckets) {
+                        const foodRows = (foodResult.data || []).filter((row) => {
+                            const date = new Date(row.logged_at);
+                            return date >= bucket.start && date < bucket.end;
+                        });
+                        const exerciseRows = (exerciseResult.data || []).filter((row) => {
+                            const date = new Date(row.logged_at);
+                            return date >= bucket.start && date < bucket.end;
+                        });
+                        entries.push({
+                            label: bucket.label,
+                            calories: foodRows.reduce((sum, row) => sum + Number(row.calories || 0), 0),
+                            exercise: exerciseRows.reduce((sum, row) => sum + Number(row.calories_burnt || 0), 0),
+                            macros: {
+                                protein: foodRows.reduce((sum, row) => sum + Number(row.protein || 0), 0),
+                                carbs: foodRows.reduce((sum, row) => sum + Number(row.carbs || 0), 0),
+                                fats: foodRows.reduce((sum, row) => sum + Number(row.fats || 0), 0),
+                            },
+                        });
+                    }
+                } else {
+                    for (const bucket of buckets) {
+                        const [foodResult, exerciseResult] = await Promise.all([
+                            supabase.from('calorie_logs')
+                                .select('calories, protein, carbs, fats')
+                                .eq('user_id', user.id)
+                                .gte('logged_at', bucket.start.toISOString())
+                                .lt('logged_at', bucket.end.toISOString()),
+                            supabase.from('exercise_logs')
+                                .select('calories_burnt')
+                                .eq('user_id', user.id)
+                                .gte('logged_at', bucket.start.toISOString())
+                                .lt('logged_at', bucket.end.toISOString()),
+                        ]);
+                        const data = foodResult.data;
+                        const error = foodResult.error || exerciseResult.error;
+                        if (error) throw error;
+                        entries.push({
+                            label: bucket.label,
+                            calories: (data || []).reduce((sum, row) => sum + row.calories, 0),
+                            exercise: (exerciseResult.data || []).reduce((sum, row) => sum + (row.calories_burnt || 0), 0),
+                            macros: {
+                                protein: (data || []).reduce((sum, row) => sum + (row.protein || 0), 0),
+                                carbs: (data || []).reduce((sum, row) => sum + (row.carbs || 0), 0),
+                                fats: (data || []).reduce((sum, row) => sum + (row.fats || 0), 0),
+                            },
+                        });
+                    }
                 }
                 setData(entries);
                 const nonZero = entries.filter((e) => e.calories > 0);
                 const total = entries.reduce((s, e) => s + e.calories, 0);
-                const avg = nonZero.length > 0 ? total / nonZero.length : 0;
+                const avg = buckets.length > 0 ? total / buckets.length : 0;
                 const max = Math.max(...entries.map((e) => e.calories), 0);
                 const avgMacros = {
-                    protein: nonZero.length > 0 ? nonZero.reduce((s, e) => s + e.macros.protein, 0) / nonZero.length : 0,
-                    carbs: nonZero.length > 0 ? nonZero.reduce((s, e) => s + e.macros.carbs, 0) / nonZero.length : 0,
-                    fats: nonZero.length > 0 ? nonZero.reduce((s, e) => s + e.macros.fats, 0) / nonZero.length : 0
+                    protein: buckets.length > 0 ? nonZero.reduce((s, e) => s + e.macros.protein, 0) / buckets.length : 0,
+                    carbs: buckets.length > 0 ? nonZero.reduce((s, e) => s + e.macros.carbs, 0) / buckets.length : 0,
+                    fats: buckets.length > 0 ? nonZero.reduce((s, e) => s + e.macros.fats, 0) / buckets.length : 0
                 };
                 setStats({ avg, max, total, avgMacros });
             } catch (e) {

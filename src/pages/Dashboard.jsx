@@ -1,14 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import { getLocalDayRange, loggedAtForDate, toLocalDateKey } from '../utils/date';
+import { calculateDailySummary } from '../utils/trackerMetrics';
+import { estimateFoodFallback } from '../utils/foodEstimate';
+import { useNavigate } from 'react-router-dom';
 import {
     Flame, Plus, Trash2, Apple, RefreshCw, Target, TrendingUp, Utensils, Settings, X, Dumbbell, Minus
 } from 'lucide-react';
 
 export default function Dashboard() {
     const { user, updateSettings } = useAuth();
+    const navigate = useNavigate();
     const [foodInput, setFoodInput] = useState('');
     const [logs, setLogs] = useState([]);
     const [totalCalories, setTotalCalories] = useState(0);
@@ -22,10 +26,13 @@ export default function Dashboard() {
     const [newGoal, setNewGoal] = useState(user?.calorieGoal || 2000);
     const [savingGoal, setSavingGoal] = useState(false);
     const [selectedDate, setSelectedDate] = useState(toLocalDateKey());
+    const [nutritionPreview, setNutritionPreview] = useState(null);
+    const fetchRequestRef = useRef(0);
 
     const dailyGoal = user?.calorieGoal || 2000;
 
     const fetchToday = useCallback(async () => {
+        const requestId = ++fetchRequestRef.current;
         try {
             setFetching(true);
             const { start, end } = getLocalDayRange(selectedDate);
@@ -38,6 +45,7 @@ export default function Dashboard() {
             ]);
             if (foodRes.error) throw foodRes.error;
             if (exerciseRes.error) throw exerciseRes.error;
+            if (requestId !== fetchRequestRef.current) return;
             const foodLogs = foodRes.data || [];
             const exerciseLogs = exerciseRes.data || [];
             setLogs(foodLogs);
@@ -75,32 +83,56 @@ export default function Dashboard() {
         if (!foodInput.trim()) return;
         setError('');
         setLoading(true);
+        setNutritionPreview(null);
         try {
-            const response = await fetch('/api/nutrition', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ foodItem: foodInput.trim() }),
+            let nutrition;
+            try {
+                const response = await fetch('/api/nutrition', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ foodItem: foodInput.trim() }),
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok || !contentType.includes('application/json')) {
+                    throw new Error('AI unavailable');
+                }
+                nutrition = await response.json();
+            } catch {
+                nutrition = estimateFoodFallback(foodInput.trim());
+            }
+            setNutritionPreview({
+                food_item: foodInput.trim(),
+                calories: Number(nutrition.calories),
+                protein: Number(nutrition.protein || 0),
+                carbs: Number(nutrition.carbs || 0),
+                fats: Number(nutrition.fats || 0),
+                serving_size: String(nutrition.serving_size || '1 serving'),
+                notes: String(nutrition.notes || ''),
+                source: 'estimated',
             });
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                throw new Error(body.error || 'Failed to analyze food');
-            }
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                throw new Error('Run the app with "npm run dev:vercel" for local AI API routes');
-            }
-            const nutrition = await response.json();
+        } catch (err) {
+            setError(err.message || 'Failed to analyze food. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConfirmNutrition = async () => {
+        if (!nutritionPreview) return;
+        setLoading(true);
+        setError('');
+        try {
             const { data, error } = await supabase
                 .from('calorie_logs')
                 .insert({
                     user_id: user.id,
-                    food_item: foodInput.trim(),
-                    calories: nutrition.calories,
-                    protein: nutrition.protein,
-                    carbs: nutrition.carbs,
-                    fats: nutrition.fats,
-                    serving_size: nutrition.serving_size,
-                    notes: nutrition.notes,
+                    food_item: nutritionPreview.food_item,
+                    calories: nutritionPreview.calories,
+                    protein: nutritionPreview.protein,
+                    carbs: nutritionPreview.carbs,
+                    fats: nutritionPreview.fats,
+                    serving_size: nutritionPreview.serving_size,
+                    notes: nutritionPreview.notes,
                     logged_at: loggedAtForDate(selectedDate).toISOString(),
                 })
                 .select('*')
@@ -115,6 +147,7 @@ export default function Dashboard() {
             }));
             setLastAdded(data);
             setFoodInput('');
+            setNutritionPreview(null);
         } catch (err) {
             setError(err.message || 'Failed to log food. Please try again.');
         } finally {
@@ -143,9 +176,10 @@ export default function Dashboard() {
         }
     };
 
-    const netCalories = totalCalories - caloriesBurnt;
-    const percentage = Math.min((netCalories / dailyGoal) * 100, 100);
-    const remaining = Math.max(dailyGoal - netCalories, 0);
+    const summary = calculateDailySummary(logs, caloriesBurnt ? [{ calories_burnt: caloriesBurnt }] : [], dailyGoal);
+    const netCalories = summary.net;
+    const percentage = summary.progress;
+    const remaining = summary.remaining;
     const selectedDateObject = new Date(`${selectedDate}T12:00:00`);
     const today = selectedDateObject.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     const hour = new Date().getHours();
@@ -178,53 +212,28 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="stats-grid">
-                    <div className="stat-card primary">
-                        <div className="stat-icon"><Flame size={24} /></div>
-                        <div className="stat-info">
-                            <span className="stat-value">{totalCalories.toFixed(0)}</span>
-                            <span className="stat-label">Consumed</span>
-                        </div>
+                <section className="daily-summary" aria-label="Daily calorie summary">
+                    <button type="button" className="remaining-card" onClick={() => { setNewGoal(dailyGoal); setShowGoalModal(true); }}>
+                        <span className="summary-label">Remaining today</span>
+                        <strong className="remaining-value">{remaining}</strong>
+                        <span className="summary-unit">kcal</span>
+                        <span className="summary-progress"><span style={{ width: `${percentage}%`, background: progressColor }} /></span>
+                    </button>
+                    <div className="summary-metrics">
+                        <div><span>Food</span><strong>{summary.consumed}</strong><small>kcal</small></div>
+                        <div><span>Exercise</span><strong>{summary.exercise}</strong><small>kcal</small></div>
+                        <div><span>Net</span><strong>{netCalories}</strong><small>kcal</small></div>
                     </div>
-                    <div className="stat-card burnt-card">
-                        <div className="stat-icon burnt-icon"><Dumbbell size={24} /></div>
-                        <div className="stat-info">
-                            <span className="stat-value flex-value">
-                                <Minus size={14} className="minus-sign" /> {caloriesBurnt.toFixed(0)}
-                            </span>
-                            <span className="stat-label">Burnt</span>
-                        </div>
-                    </div>
-                    <div className="stat-card net-card">
-                        <div className="stat-icon net-icon"><TrendingUp size={24} /></div>
-                        <div className="stat-info">
-                            <span className="stat-value">{netCalories.toFixed(0)}</span>
-                            <span className="stat-label">Net Calories</span>
-                        </div>
-                    </div>
-                    <div className="stat-card clickable" onClick={() => { setNewGoal(dailyGoal); setShowGoalModal(true); }}>
-                        <div className="stat-icon secondary-icon"><Target size={24} /></div>
-                        <div className="stat-info">
-                            <span className="stat-value">{dailyGoal}</span>
-                            <span className="stat-label">Goal <Settings size={12} style={{ marginLeft: 4, opacity: 0.6 }} /></span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon green-icon"><TrendingUp size={24} /></div>
-                        <div className="stat-info">
-                            <span className="stat-value">{remaining.toFixed(0)}</span>
-                            <span className="stat-label">Remaining</span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon orange-icon"><Utensils size={24} /></div>
-                        <div className="stat-info">
-                            <span className="stat-value">{logs.length}</span>
-                            <span className="stat-label">Items Logged</span>
-                        </div>
-                    </div>
-                </div>
+                </section>
+
+                <section className="quick-actions" aria-label="Quick actions">
+                    <button type="button" onClick={() => document.querySelector('#food-input')?.focus()}>
+                        <Plus size={20} /><span><strong>Add food</strong><small>Describe a meal</small></span>
+                    </button>
+                    <button type="button" onClick={() => navigate('/exercise')}>
+                        <Dumbbell size={20} /><span><strong>Add exercise</strong><small>Type a workout</small></span>
+                    </button>
+                </section>
 
                 {/* Macros Summary */}
                 <div className="macros-grid">
@@ -287,11 +296,53 @@ export default function Dashboard() {
                             <span className="banner-detail"> ({lastAdded.serving_size})</span>
                         </div>
                     )}
+
+                    {nutritionPreview && (
+                        <div className="nutrition-review" aria-label="Review estimated nutrition">
+                            <div className="nutrition-review-header">
+                                <div>
+                                    <span className="review-kicker">Estimated for review</span>
+                                    <strong>{nutritionPreview.food_item}</strong>
+                                </div>
+                                <button type="button" className="icon-btn" onClick={() => setNutritionPreview(null)} aria-label="Cancel nutrition estimate">×</button>
+                            </div>
+                            <div className="nutrition-review-grid">
+                                {[
+                                    ['calories', 'Calories'],
+                                    ['protein', 'Protein'],
+                                    ['carbs', 'Carbs'],
+                                    ['fats', 'Fats'],
+                                ].map(([key, label]) => (
+                                    <label key={key}>
+                                        <span>{label}</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step={key === 'calories' ? '1' : '0.1'}
+                                            value={nutritionPreview[key]}
+                                            onChange={(event) => setNutritionPreview((current) => ({ ...current, [key]: Number(event.target.value) || 0 }))}
+                                        />
+                                    </label>
+                                ))}
+                            </div>
+                            <label className="nutrition-serving">
+                                <span>Serving</span>
+                                <input
+                                    type="text"
+                                    value={nutritionPreview.serving_size}
+                                    onChange={(event) => setNutritionPreview((current) => ({ ...current, serving_size: event.target.value }))}
+                                />
+                            </label>
+                            <button type="button" className="logger-btn nutrition-confirm" onClick={handleConfirmNutrition} disabled={loading || nutritionPreview.calories <= 0}>
+                                {loading ? <span className="btn-spinner small" /> : <><Plus size={18} /> Add to today</>}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Food Log List */}
                 <div className="log-card">
-                    <h2 className="card-title"><Utensils size={20} /> Today's Food Log</h2>
+                    <h2 className="card-title"><Utensils size={20} /> {selectedDate === toLocalDateKey() ? "Today's" : 'Selected'} Food Log</h2>
                     {fetching ? (
                         <div className="loading-state">
                             <span className="btn-spinner large" />

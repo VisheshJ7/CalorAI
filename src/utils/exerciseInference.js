@@ -53,10 +53,21 @@ export function inferExerciseFallback(description, weightKg, heightCm, catalogue
   const isWalking = /\b(walk|walking|brisk)\b/.test(text);
 
   const matches = findExerciseCatalogueMatches(description, catalogue, 100);
-  const catalogueEntry = isWalking
-    ? matches.find((item) => item.name.toLowerCase().includes('3.5 mph, brisk pace'))
-      || matches.find((item) => item.name.toLowerCase().includes('walking'))
-    : matches[0];
+  const isCycling = /\b(cycl|bicycle|biking|bike)\b/.test(text);
+  let catalogueEntry = null;
+  if (isWalking) {
+    catalogueEntry = matches.find((item) => item.name.toLowerCase().includes('3.5 mph, brisk pace'))
+      || matches.find((item) => item.name.toLowerCase().includes('walking'));
+  } else if (isCycling) {
+    if (/\b(race|racing|fast|vigorous|20 mph)\b/.test(text)) {
+      catalogueEntry = matches.find((item) => item.name.toLowerCase().includes('vigorous'));
+    }
+    catalogueEntry = catalogueEntry
+      || matches.find((item) => item.name.toLowerCase().includes('12-13.9 mph'))
+      || matches.find((item) => item.name.toLowerCase().includes('cycling'));
+  } else {
+    catalogueEntry = matches[0];
+  }
 
   if (!catalogueEntry) {
     throw new Error('Could not match that exercise. Try a clearer activity name.');

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Scale, Ruler, User, Activity, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
+import { calculateGoalPreview } from '../utils/trackerMetrics';
 
 const ACTIVITY_LEVELS = [
     { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
@@ -40,6 +41,15 @@ export default function Profile() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [saved, setSaved] = useState(false);
+    const goalPreview = calculateGoalPreview(user?.calorieGoal || 2000, {
+        gender: form.gender,
+        age: Number(form.age),
+        height: Number(form.height),
+        weight: Number(form.weight),
+        activityLevel: form.activity_level,
+        goal: form.goal,
+        weeklyChangePerWeek: form.goal === 'maintain' ? 0 : Number(form.weight_change_per_week),
+    });
 
     const handleChange = (event) => {
         setSaved(false);
@@ -48,6 +58,21 @@ export default function Profile() {
 
     const handleSave = async (event) => {
         event.preventDefault();
+        const age = Number(form.age);
+        const height = Number(form.height);
+        const weight = Number(form.weight);
+        if (!Number.isInteger(age) || age < 10 || age > 120) {
+            setError('Enter a valid age from 10 to 120');
+            return;
+        }
+        if (!Number.isFinite(height) || height < 100 || height > 250) {
+            setError('Enter a valid height from 100 to 250 cm');
+            return;
+        }
+        if (!Number.isFinite(weight) || weight < 30 || weight > 300) {
+            setError('Enter a valid weight from 30 to 300 kg');
+            return;
+        }
         setSaving(true);
         setError('');
         setSaved(false);
@@ -159,6 +184,14 @@ export default function Profile() {
 
                     {error && <div className="profile-error" role="alert">{error}</div>}
                     {saved && <div className="profile-success" role="status">Profile saved. Your calorie goal is updated.</div>}
+
+                    {goalPreview.changed && (
+                        <div className="goal-preview" role="status">
+                            <span>New daily goal</span>
+                            <strong>{user?.calorieGoal || 2000} → {goalPreview.goal} kcal</strong>
+                            <small>Maintenance estimate: {goalPreview.maintenance} kcal</small>
+                        </div>
+                    )}
 
                     <button type="submit" className="profile-save" disabled={saving}>
                         {saving ? 'Saving...' : 'Save changes'}
