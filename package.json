@@ -9,6 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "test:diagnostics": "node scripts/gemini-regression.mjs",
+    "test:exercise": "node scripts/exercise-inference.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

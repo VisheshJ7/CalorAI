@@ -1,43 +1,21 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Flame, Search, Clock, Trash2, Dumbbell, TrendingUp, Activity, Zap, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Flame, Clock, Trash2, Dumbbell, TrendingUp, Activity, Zap, Plus } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getLocalDayRange, loggedAtForDate, toLocalDateKey } from '../utils/date';
+import { inferExerciseFallback } from '../utils/exerciseInference.js';
 
 export default function Exercise() {
     const { user } = useAuth();
-    const [exercises, setExercises] = useState([]);
     const [todayLogs, setTodayLogs] = useState([]);
     const [totalBurnt, setTotalBurnt] = useState(0);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedExercise, setSelectedExercise] = useState(null);
-    const [duration, setDuration] = useState('');
+    const [exerciseDescription, setExerciseDescription] = useState('');
+    const [inferredExercise, setInferredExercise] = useState(null);
     const [loading, setLoading] = useState(false);
     const [logging, setLogging] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
     const [error, setError] = useState('');
-    const dropdownRef = useRef(null);
     const [selectedDate, setSelectedDate] = useState(toLocalDateKey());
-
-    // Fetch exercises on search
-    useEffect(() => {
-        const fetchExercises = async () => {
-            try {
-                const response = await fetch('/exercises.json');
-                const all = await response.json();
-                const query = searchQuery.trim().toLowerCase();
-                setExercises(all
-                    .filter((item) => !query || item.name.toLowerCase().includes(query))
-                    .slice(0, 50));
-            } catch (err) {
-                console.error('Failed to fetch exercises:', err);
-            }
-        };
-        
-        const debounce = setTimeout(fetchExercises, 300);
-        return () => clearTimeout(debounce);
-    }, [searchQuery]);
 
     // Fetch today's exercise logs
     const fetchTodayLogs = useCallback(async () => {
@@ -65,26 +43,9 @@ export default function Exercise() {
         fetchTodayLogs();
     }, [fetchTodayLogs]);
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-                setShowDropdown(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const handleSelectExercise = (exercise) => {
-        setSelectedExercise(exercise);
-        setSearchQuery(exercise.name);
-        setShowDropdown(false);
-    };
-
     const handleLogExercise = async () => {
-        if (!selectedExercise || !duration || parseFloat(duration) <= 0) {
-            setError('Please select an exercise and enter a valid duration');
+        if (!exerciseDescription.trim()) {
+            setError('Describe the exercise, such as “5 km brisk walk”');
             return;
         }
 
@@ -93,29 +54,52 @@ export default function Exercise() {
         try {
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('weight')
+                .select('weight, height')
                 .eq('id', user.id)
                 .single();
             if (profileError) throw profileError;
             if (!profile?.weight) throw new Error('Please complete onboarding to set your weight');
-            const caloriesBurnt = profile.weight
-                * selectedExercise.calories_per_kg_per_hour
-                * (parseFloat(duration) / 60);
+
+            let inference;
+            try {
+                const response = await fetch('/api/exercise', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        exerciseDescription: exerciseDescription.trim(),
+                        weightKg: profile.weight,
+                        heightCm: profile.height,
+                    }),
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok || !contentType.includes('application/json')) {
+                    throw new Error('AI inference unavailable');
+                }
+                inference = await response.json();
+            } catch {
+                const catalogueResponse = await fetch('/exercises.json');
+                if (!catalogueResponse.ok) throw new Error('Could not load exercise data');
+                const catalogue = await catalogueResponse.json();
+                inference = inferExerciseFallback(
+                    exerciseDescription,
+                    profile.weight,
+                    profile.height,
+                    catalogue,
+                );
+            }
+            setInferredExercise(inference);
+
             const { error } = await supabase
                 .from('exercise_logs')
                 .insert({
                     user_id: user.id,
-                    exercise_name: selectedExercise.name,
-                    duration_minutes: parseFloat(duration),
-                    calories_burnt: Math.round(caloriesBurnt * 10) / 10,
+                    exercise_name: inference.exerciseName,
+                    duration_minutes: inference.durationMinutes,
+                    calories_burnt: inference.caloriesBurnt,
                     logged_at: loggedAtForDate(selectedDate).toISOString(),
                 });
             if (error) throw error;
-            // Reset form
-            setSelectedExercise(null);
-            setSearchQuery('');
-            setDuration('');
-            // Refresh logs
+            setExerciseDescription('');
             await fetchTodayLogs();
         } catch (err) {
             setError(err.message || 'Failed to log exercise');
@@ -139,15 +123,14 @@ export default function Exercise() {
     };
 
     const formatTime = (dateStr) => {
-        // Handle SQLite datetime format (YYYY-MM-DD HH:MM:SS)
-        const date = new Date(dateStr.replace(' ', 'T') + 'Z');
+        if (!dateStr) return '';
+        const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T');
+        const date = new Date(normalized.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(normalized)
+            ? normalized
+            : `${normalized}Z`);
+        if (Number.isNaN(date.getTime())) return '';
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
-
-    // Estimate calories for preview
-    const estimatedCalories = selectedExercise && duration
-        ? Math.round(70 * selectedExercise.calories_per_kg_per_hour * (parseFloat(duration) / 60)) // Assume 70kg for preview
-        : 0;
 
     return (
         <div className="app-layout">
@@ -215,58 +198,25 @@ export default function Exercise() {
                 {error && <div className="exercise-error">{error}</div>}
 
                 <div className="exercise-form">
-                    <div className="exercise-search-wrap" ref={dropdownRef}>
-                        <div className="search-input-wrap">
-                            <Search size={18} className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search exercises (e.g., Running, Swimming...)"
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    setSelectedExercise(null);
-                                    setShowDropdown(true);
-                                }}
-                                onFocus={() => setShowDropdown(true)}
-                                className="exercise-search-input"
-                            />
-                        </div>
-                        
-                        {showDropdown && exercises.length > 0 && (
-                            <div className="exercise-dropdown">
-                                {exercises.map((ex, idx) => (
-                                    <button
-                                        key={idx}
-                                        className="exercise-option"
-                                        onClick={() => handleSelectExercise(ex)}
-                                    >
-                                        <span className="exercise-name">{ex.name}</span>
-                                        <span className="exercise-cal">
-                                            ~{Math.round(ex.calories_per_kg_per_hour * 70)} kcal/hr
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="duration-input-wrap">
-                        <Clock size={18} className="duration-icon" />
+                    <div className="exercise-description-wrap">
                         <input
-                            type="number"
-                            placeholder="Duration"
-                            value={duration}
-                            onChange={(e) => setDuration(e.target.value)}
-                            min={1}
-                            className="duration-input"
+                            type="text"
+                            placeholder="Try “5 km brisk walk” or “45 minutes cycling”"
+                            value={exerciseDescription}
+                            onChange={(event) => {
+                                setExerciseDescription(event.target.value);
+                                setInferredExercise(null);
+                                setError('');
+                            }}
+                            className="exercise-description-input"
+                            aria-label="Exercise description"
                         />
-                        <span className="duration-unit">min</span>
                     </div>
 
                     <button
                         className="log-exercise-btn"
                         onClick={handleLogExercise}
-                        disabled={!selectedExercise || !duration || logging}
+                        disabled={!exerciseDescription.trim() || logging}
                     >
                         {logging ? (
                             <span className="btn-spinner" />
@@ -279,10 +229,10 @@ export default function Exercise() {
                     </button>
                 </div>
 
-                {selectedExercise && duration && (
+                {inferredExercise && (
                     <div className="calorie-preview">
                         <TrendingUp size={16} />
-                        <span>Estimated burn: <strong>~{estimatedCalories} kcal</strong> (varies by weight)</span>
+                        <span>{inferredExercise.exerciseName}: <strong>{inferredExercise.durationMinutes} min • {inferredExercise.caloriesBurnt} kcal</strong></span>
                     </div>
                 )}
             </div>

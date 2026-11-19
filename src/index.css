@@ -1434,6 +1434,28 @@ textarea::placeholder { color: var(--text-3); }
   align-items: flex-start;
 }
 
+.exercise-description-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.exercise-description-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 16px;
+  background: #f8faf6;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.exercise-description-input:focus {
+  outline: none;
+  border-color: #82ad95;
+  box-shadow: 0 0 0 3px rgba(47,125,91,0.10);
+}
+
 .exercise-search-wrap {
   flex: 1;
   position: relative;
@@ -1594,6 +1616,16 @@ textarea::placeholder { color: var(--text-3); }
 
 .calorie-preview strong {
   color: var(--primary-h);
+}
+
+.calorie-preview {
+  background: #edf4ef;
+  color: var(--text-2);
+  border: 1px solid #d8e7dc;
+}
+
+.calorie-preview strong {
+  color: var(--primary);
 }
 
 /* Exercise Log List */
